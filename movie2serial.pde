@@ -73,6 +73,61 @@ class ImagePixels{
   }
 }
 
+class remapImage{
+  int new_map_index_start;
+  int original_map_index_start;
+  int original_map_index_end;
+  int counter;
+  boolean flipped;
+  
+  public remapImage(){ 
+  }
+  void remap_helper(int i, int original_map_index){
+     if(counter == 16 && flipped == false){
+        //println("flipped 1");
+        flipped = true;
+        new_map_index_start = ((i+1) * 32) - 1;
+      }
+      if(originalimagepixels.get(str(original_map_index)) == 1){
+         //println(str(i) + "   "  + str(new_map_index_start) + "," + str(original_map_index_start) ); 
+          newimagepixels.set(str(new_map_index_start), str(original_map_index));
+          //println(str(new_map_index_start));
+          //left to right
+          if(flipped == false){
+            new_map_index_start += 1;
+            counter += 1;
+          }
+          //right to left
+          if(flipped == true){
+            new_map_index_start -= 1;
+            //println(str(new_map_index_start));
+          }
+      }
+      
+  }
+  void remap(){
+    // number of rows used on teensy
+    for(int i=0; i<8; i++){
+      new_map_index_start = i * 32;
+      original_map_index_start = i * 32;
+      original_map_index_end = ((i+1) * 32) - 1;
+      counter = 0;
+      flipped = false;
+      // 32 LEDs split in half
+      // LEDs index 0 to 15
+      for(int a=0; a<16; a++){
+        original_map_index_start += 1;
+        remap_helper(i, original_map_index_start);
+      }
+      // LEDs index 31 to 16
+      for(int b=0; b<16; b++){
+        original_map_index_end -= 1;
+        remap_helper(i, original_map_index_end);
+      }
+    }
+  }
+}
+
 void settings() {
   size(500, 700);  // create the window
 }
@@ -255,11 +310,12 @@ void draw() {
   noFill();  // Set fill to transparrent
   //ellipse (x,y,d1,d2)
   stroke(250);
-  ellipse(250, 450, 500, 500);
+  //ellipse(250, 450, 500, 500);
   
   //grid + pixels
   populateGrid();
-  remapImage();
+  remapImage image1 = new remapImage();
+  image1.remap();
   
   getFrame();
   
@@ -362,8 +418,8 @@ void populateGrid(){
   for(int i=0; i<16; i++){
     stroke(255);
     // grid
-    line(i*dist_lines_across, 200, i*dist_lines_across, height);
-    line(0, 200 + i*dist_lines_across, width, 200 + i*dist_lines_across); 
+    //line(i*dist_lines_across, 200, i*dist_lines_across, height);
+    //line(0, 200 + i*dist_lines_across, width, 200 + i*dist_lines_across); 
     
     float half_dist = dist_lines_across / 2;
     for(int j=0; j<16; j++){
@@ -376,11 +432,11 @@ void populateGrid(){
         stroke(100);
         inCircle = true;
         originalimagepixels.set(str(index), 1);
-        ellipse(x, y, 5, 5);
+        //ellipse(x, y, 5, 5);
       }else{
         stroke(255);
         originalimagepixels.set(str(index), 0);
-        ellipse(x, y , 5, 5);
+        //ellipse(x, y , 5, 5);
       }
       
     }
