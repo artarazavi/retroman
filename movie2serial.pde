@@ -395,8 +395,8 @@ void populateGrid(){
   }
   originalimagepixels.set(str(4), 1);
   originalimagepixels.set(str(11), 1);
-  originalimagepixels.set(str(260), 1);
-  originalimagepixels.set(str(267), 1);
+  originalimagepixels.set(str(251), 1);
+  originalimagepixels.set(str(244), 1);
   //println(originalimagepixels);
 }
 
