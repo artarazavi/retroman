@@ -79,8 +79,19 @@ class remapImage{
   int original_map_index_end;
   int counter;
   boolean flipped;
+  PImage img;
+  PImage imgnew;
+  PImage imgresize;
   
   public remapImage(){ 
+    img = get(0,200,500,500);
+    
+    imgresize = createImage(16, 16, RGB);
+    imgresize.copy(img, 0, 0, 500, 500, 0, 0, 16, 16);
+    
+    imgnew = createImage(16, 16, RGB);
+    imgnew.loadPixels();
+    
   }
   void remap_helper(int i, int original_map_index){
      if(counter == 16 && flipped == false){
@@ -91,6 +102,10 @@ class remapImage{
       if(originalimagepixels.get(str(original_map_index)) == 1){
          //println(str(i) + "   "  + str(new_map_index_start) + "," + str(original_map_index_start) ); 
           newimagepixels.set(str(new_map_index_start), str(original_map_index));
+          
+          imgnew.pixels[new_map_index_start] = imgresize.pixels[original_map_index];
+          
+          
           //println(str(new_map_index_start));
           //left to right
           if(flipped == false){
@@ -107,10 +122,11 @@ class remapImage{
   }
   void remap(){
     // number of rows used on teensy
+    
     for(int i=0; i<8; i++){
       new_map_index_start = i * 32;
-      original_map_index_start = i * 32;
-      original_map_index_end = ((i+1) * 32) - 1;
+      original_map_index_start = (i * 32) -1;
+      original_map_index_end = ((i+1) * 32);
       counter = 0;
       flipped = false;
       // 32 LEDs split in half
@@ -125,7 +141,14 @@ class remapImage{
         remap_helper(i, original_map_index_end);
       }
     }
+    imgnew.updatePixels();
+    image(imgnew, 0,0,100,100);
   }
+  
+  PImage getImage(){
+    return imgnew;
+  }
+  
 }
 
 void settings() {
@@ -150,8 +173,8 @@ void setup() {
   ellipseMode(CENTER);
 }
 
-void getFrame() {
-  PImage img = get(0,200,500,500);
+void getFrame(PImage img) {
+  //PImage img = get(0,200,500,500);
   for (int i=0; i < numPorts; i++) {
     // copy a portion of the movie's image to the LED image
     int xoffset = percentage(img.width, ledArea[i].x);
@@ -159,8 +182,11 @@ void getFrame() {
     int xwidth =  percentage(img.width, ledArea[i].width);
     int yheight = percentage(img.height, ledArea[i].height);
     ledImage[i].copy(img, xoffset, yoffset, xwidth, yheight,
-                     0, 0, ledImage[i].width, (ledImage[i].height));
-    
+                     0, 0, ledImage[i].width, (ledImage[i].height)/2);
+    //println(ledImage[i].width);
+    //println((ledImage[i].height)/2);
+    //println(xwidth);
+    //println(img);
     // convert the LED image to raw data
     byte[] ledData =  new byte[(ledImage[i].width * ledImage[i].height * 3) + 3];
     image2data(ledImage[i], ledData, ledLayout[i]);
@@ -215,16 +241,17 @@ void image2data(PImage image, byte[] data, boolean layout) {
     for (x = xbegin; x != xend; x += xinc) {
       for (int i=0; i < 8; i++) {
         // fetch 8 pixels from the image, 1 for each pin
-        //pixel[i] = image.pixels[x + (y + linesPerPin * i) * image.width];
-        int pixelnum =  x + (y + linesPerPin * i) * image.width;
+        pixel[i] = image.pixels[x + (y + linesPerPin * i) * image.width];
+        pixel[i] = colorWiring(pixel[i]);
+        //int pixelnum =  x + (y + linesPerPin * i) * image.width;
         //println(pixelnum);
         //if(newimagepixels.hasKey(str(pixelnum))){
-        if(originalimagepixels.get(str(pixelnum)) == 1){
+        //if(originalimagepixels.get(str(pixelnum)) == 1){
           //int imagemapping = int(newimagepixels.get(str(pixelnum)));
-          pixel[i] = image.pixels[pixelnum];
-          pixel[i] = colorWiring(pixel[i]);
+          //pixel[i] = image.pixels[imagemapping];
+          //pixel[i] = colorWiring(pixel[i]);
           //println(str(pixelnum) + " , " + str(imagemapping) + " , " + str(pixel[i]));
-        }
+        //}
         
         //println(newimagepixels.valueArray());
         //pixel[i] = image.pixels[x + (y + linesPerPin * i) * image.width];
@@ -316,8 +343,11 @@ void draw() {
   populateGrid();
   remapImage image1 = new remapImage();
   image1.remap();
+  PImage newimage = image1.getImage();
+  //image(newimage, 0, 0, 100, 100);
+  //println(newimagepixels);
   
-  getFrame();
+  getFrame(newimage);
   
   // then try to show what was most recently sent to the LEDs
   // by displaying all the images for each port.
