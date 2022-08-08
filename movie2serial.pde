@@ -62,14 +62,14 @@ ArrayList<ImagePixels> imagepixels = new ArrayList<ImagePixels>();
 //ArrayList<ImagePixels> newimagepixels = new ArrayList<ImagePixels>();
 StringDict newimagepixels = new StringDict();
 IntDict originalimagepixels = new IntDict();
+remapImage image1 = new remapImage();
+
 
 class ImagePixels{
-  float xPos, yPos;
-  boolean inCircle;
-  public ImagePixels(float xPos, float yPos, boolean inCircle){
-    this.xPos = xPos;
-    this.yPos = yPos;
-    this.inCircle = inCircle; 
+  int org_img, new_img;
+  public ImagePixels(int org_img, int new_img){
+    this.org_img = org_img;
+    this.new_img = new_img;
   }
 }
 
@@ -84,6 +84,9 @@ class remapImage{
   PImage imgresize;
   
   public remapImage(){ 
+    
+  }
+  void get_image(){
     img = get(0,200,500,500);
     
     imgresize = createImage(16, 16, RGB);
@@ -91,7 +94,6 @@ class remapImage{
     
     imgnew = createImage(16, 16, RGB);
     imgnew.loadPixels();
-    
   }
   void remap_helper(int i, int original_map_index){
      if(counter == 16 && flipped == false){
@@ -103,7 +105,9 @@ class remapImage{
          //println(str(i) + "   "  + str(new_map_index_start) + "," + str(original_map_index_start) ); 
           newimagepixels.set(str(new_map_index_start), str(original_map_index));
           
-          imgnew.pixels[new_map_index_start] = imgresize.pixels[original_map_index];
+          //imgnew.pixels[new_map_index_start] = imgresize.pixels[original_map_index];
+          ImagePixels save_pixel = new ImagePixels(original_map_index, new_map_index_start);
+          imagepixels.add(save_pixel);
           
           
           //println(str(new_map_index_start));
@@ -119,6 +123,14 @@ class remapImage{
           }
       }
       
+  }
+  void perform_remap(){
+    for (int i = 0; i < imagepixels.size(); i++) {
+      ImagePixels part = imagepixels.get(i);
+      imgnew.pixels[part.new_img] = imgresize.pixels[part.org_img];
+    }
+    imgnew.updatePixels();
+    image(imgnew, 0,0,100,100);
   }
   void remap(){
     // number of rows used on teensy
@@ -141,8 +153,8 @@ class remapImage{
         remap_helper(i, original_map_index_end);
       }
     }
-    imgnew.updatePixels();
-    image(imgnew, 0,0,100,100);
+    //imgnew.updatePixels();
+    //image(imgnew, 0,0,100,100);
   }
   
   PImage getImage(){
@@ -167,10 +179,14 @@ void setup() {
     gammatable[i] = (int)(pow((float)i / 255.0, gamma) * 255.0 + 0.5);
   }
   
-  myMovie = new Movie(this, "/Users/artarazavi/Desktop/movie2serial/data/trip.mov");
+  myMovie = new Movie(this, "/Users/artarazavi/Desktop/movie2serial/data/pacman.mov");
   myMovie.loop();  // start the movie :-)
   
   ellipseMode(CENTER);
+  
+  //fill the circle grid of true or false pixels
+  populateGrid();
+  image1.remap();
 }
 
 void getFrame(PImage img) {
@@ -213,7 +229,7 @@ void movieEvent(Movie m) {
   m.read();
 
   //if (framerate == 0) framerate = m.getSourceFrameRate();
-  framerate = 30.0; // TODO, how to read the frame rate???
+  framerate = 60.0; // TODO, how to read the frame rate???
 
 }
 
@@ -290,7 +306,7 @@ void serialConfigure(String portName) {
     return;
   }
   try {
-    ledSerial[numPorts] = new Serial(this, portName);
+    ledSerial[numPorts] = new Serial(this, portName, 14400);
     if (ledSerial[numPorts] == null) throw new NullPointerException();
     ledSerial[numPorts].write('?');
   } catch (Throwable e) {
@@ -329,20 +345,21 @@ void draw() {
   
   // draw a circle
   
-  noStroke();
-  fill(255,0,0);
-  rect(250,450,250,250);
-  fill(0,0,255);
-  rect(0,200,250,250);
-  noFill();  // Set fill to transparrent
+  //noStroke();
+  //fill(255,0,0);
+  //rect(250,450,250,250);
+  //fill(0,0,255);
+  //rect(0,200,250,250);
+  //noFill();  // Set fill to transparrent
   //ellipse (x,y,d1,d2)
-  stroke(250);
+  //stroke(250);
   //ellipse(250, 450, 500, 500);
   
   //grid + pixels
-  populateGrid();
-  remapImage image1 = new remapImage();
-  image1.remap();
+  //populateGrid();
+  //remapImage image1 = new remapImage();
+  image1.get_image();
+  image1.perform_remap();
   PImage newimage = image1.getImage();
   //image(newimage, 0, 0, 100, 100);
   //println(newimagepixels);
@@ -368,7 +385,7 @@ void populateGrid(){
   //grid + pixels
   float dist_lines_across = width / 16;
   for(int i=0; i<16; i++){
-    stroke(255);
+    //stroke(255);
     // grid
     //line(i*dist_lines_across, 200, i*dist_lines_across, height);
     //line(0, 200 + i*dist_lines_across, width, 200 + i*dist_lines_across); 
